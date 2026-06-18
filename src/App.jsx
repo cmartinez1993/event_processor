@@ -5,6 +5,8 @@ import FetchEvents from './components/FetchEvents.jsx'
 import GetById from './components/GetById.jsx'
 import DangerZone from './components/DangerZone.jsx'
 import ResponseLog from './components/ResponseLog.jsx'
+import HealthStatus from './components/HealthStatus.jsx'
+import AnalyticsDaily from './components/AnalyticsDaily.jsx'
 
 const INITIAL_LOG = [{
   id: 0,
@@ -26,7 +28,10 @@ export default function App() {
 
   return (
     <>
-      <h1>Events Processor</h1>
+      <div className="header">
+        <h1>Events Processor</h1>
+        <HealthStatus />
+      </div>
       <div className="layout">
         <div>
           <PostEvent addLog={addLog} />
@@ -34,6 +39,7 @@ export default function App() {
           <FetchEvents addLog={addLog} />
           <GetById addLog={addLog} />
           <DangerZone addLog={addLog} />
+          <AnalyticsDaily />
         </div>
         <ResponseLog log={log} onClear={clearLog} />
       </div>

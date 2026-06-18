@@ -39,5 +39,5 @@ Two independent Fastify servers, each a single file:
 
 - ES modules throughout (`"type": "module"` in package.json); use `import`/`export`, not `require`.
 - Event model fields: `id` (UUID), `type` (String, indexed), `payload` (Json), `timestamp` (DateTime), `receivedAt` (DateTime). Prisma returns `DateTime` fields as JS `Date` objects; Fastify serializes them to ISO strings automatically.
-- `prisma.config.ts` configures the Prisma CLI (datasource URL, migrations path). It is separate from runtime config.
+- **Prisma v7 connection model**: `prisma.config.ts` provides the URL to the CLI (migrations, introspection). The runtime client requires a driver adapter — `PrismaPg` from `@prisma/adapter-pg` — passed to the `PrismaClient` constructor. Neither `url` in the schema nor `datasourceUrl` in the constructor are supported in v7.
 - No build step, no transpilation, no tests, no linter configured.
