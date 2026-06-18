@@ -1,25 +1,48 @@
 # Events Processor
 
-A local event ingestion system with a Fastify REST API and a browser-based UI client.
+A local event ingestion system with a Fastify REST API and a React/Vite UI.
 
 ## Architecture
 
 ```
 ┌─────────────────────────────┐        ┌──────────────────────────────┐
-│  client.js  (port 3001)     │        │  server.js  (port 3000)      │
-│  Fastify — serves HTML UI   │──HTTP──▶  Fastify — events REST API   │
-└─────────────────────────────┘        └──────────────────────────────┘
+│  Vite  (port 3001)          │        │  server.js  (port 3000)      │
+│  React UI                   │──HTTP──▶  Fastify — events REST API   │
+└─────────────────────────────┘        └──────────────┬───────────────┘
+                                                       │
+                                              ┌────────▼────────┐
+                                              │   PostgreSQL     │
+                                              └─────────────────┘
 ```
 
-- **`server.js`** — REST API that accepts, stores, and retrieves events (in-memory)
-- **`client.js`** — Fastify server that serves the HTML control panel on port 3001
+- **`server.js`** — REST API that accepts, stores, and retrieves events in PostgreSQL via Prisma
+- **`src/`** — React frontend served by Vite dev server on port 3001
 
 ## Getting Started
+
+### Prerequisites
+
+- Node.js 20+
+- A running PostgreSQL instance
 
 ### Install
 
 ```bash
 npm install
+```
+
+### Configure the database
+
+Edit `.env` and set your connection string:
+
+```
+DATABASE_URL="postgresql://user:password@localhost:5432/events_processor?schema=public"
+```
+
+Then apply the schema:
+
+```bash
+npx prisma migrate dev
 ```
 
 ### Run
@@ -30,7 +53,7 @@ Open two terminals:
 # Terminal 1 — API server
 npm run server
 
-# Terminal 2 — UI client
+# Terminal 2 — UI
 npm run client
 ```
 
@@ -48,9 +71,9 @@ Create a new event.
 
 | Field | Type | Required | Description |
 |---|---|---|---|
-| `type` | string | yes | Event type, e.g. `user.signup` |
-| `payload` | object | no | Arbitrary data (defaults to `{}`) |
-| `timestamp` | string | no | ISO 8601 timestamp (defaults to now) |
+| `user_id` | string | yes | ID of the user who triggered the event |
+| `event_type` | string | yes | Event type, e.g. `user.signup` |
+| `event_timestamp` | string | no | ISO 8601 timestamp (defaults to now) |
 
 **Response `201`**
 
@@ -58,11 +81,11 @@ Create a new event.
 {
   "success": true,
   "event": {
-    "id": "527f5674-53a3-4528-ad91-e7a24d83fa26",
-    "type": "user.signup",
-    "payload": { "userId": "u1", "email": "alice@example.com" },
-    "timestamp": "2026-06-08T19:00:00.000Z",
-    "receivedAt": "2026-06-08T19:00:00.123Z"
+    "id": "42",
+    "user_id": "u1",
+    "event_type": "user.signup",
+    "event_timestamp": "2026-06-08T19:00:00.000Z",
+    "created_at": "2026-06-08T19:00:00.123Z"
   }
 }
 ```
@@ -71,13 +94,13 @@ Create a new event.
 
 ### GET /events
 
-List all events. Optionally filter by type.
+List all events, ordered by `created_at` descending. Optionally filter by type.
 
 **Query params**
 
 | Param | Description |
 |---|---|
-| `type` | Filter to events matching this type |
+| `event_type` | Filter to events matching this type |
 
 **Response `200`**
 
@@ -89,7 +112,7 @@ List all events. Optionally filter by type.
 
 ### GET /events/:id
 
-Fetch a single event by UUID.
+Fetch a single event by ID.
 
 **Response `200`** — the event object  
 **Response `404`** — `{ "error": "Event not found" }`
@@ -106,20 +129,15 @@ Clear all stored events.
 { "success": true, "message": "All events cleared" }
 ```
 
-## UI Buttons
+## UI
 
 | Section | Action |
 |---|---|
-| **Post Event** | Submit a custom event type and JSON payload |
+| **Post Event** | Submit a custom event with `user_id`, `event_type`, and optional timestamp |
 | **Quick Post** | One-click buttons for 6 preset event types |
 | **Get All Events** | Fetch and display every stored event |
-| **Filter** | Fetch events matching a specific type |
-| **Get Event by ID** | Look up a single event by its UUID |
+| **Filter** | Fetch events matching a specific `event_type` |
+| **Get Event by ID** | Look up a single event by its ID |
 | **Clear All Events** | Delete all events (prompts for confirmation) |
 
 All responses appear in the **Response Log** panel on the right.
-
-## Notes
-
-- Events are stored in memory — they are lost when the server restarts.
-- CORS is configured with `origin: true`, which reflects the request origin back, allowing the UI on any local port to communicate with the API.
